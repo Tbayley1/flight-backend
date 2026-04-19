@@ -33,6 +33,9 @@ def stream_flights():
 
     print(f"Reading data from {file_path}...", flush=True)
     df = pd.read_csv(file_path)
+    df.columns = df.columns.str.strip().str.lower()  # Standardize headers
+    for _, row in df.iterrows():
+        producer.send(TOPIC_NAME, value=row.to_dict())
     print(f"Loaded {len(df)} rows. Starting stream to Kafka...", flush=True)
 
     count = 0

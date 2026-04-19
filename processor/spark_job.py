@@ -1,8 +1,8 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import from_json, col, avg, to_timestamp, regexp_replace
+from pyspark.sql.functions import from_json, col, avg, min, max, count
 from pyspark.sql.types import StructType, StructField, StringType, FloatType
 
-# 1. New Schema based on your headers
+# 1. Schema
 schema = StructType([
     StructField("from_airport_code", StringType(), True),
     StructField("from_country", StringType(), True),
@@ -19,7 +19,6 @@ schema = StructType([
     StructField("co2_emissions", FloatType(), True),
     StructField("avg_co2_emission_for_this_route", FloatType(), True),
     StructField("scan_date", StringType(), True)
-
 ])
 
 spark = SparkSession.builder.appName("FlightPriceProcessor").getOrCreate()
@@ -29,49 +28,54 @@ spark.sparkContext.setLogLevel("WARN")
 raw_df = spark.readStream \
     .format("kafka") \
     .option("kafka.bootstrap.servers", "kafka:9092") \
-    .option("subscribe", "flight_data")\
+    .option("subscribe", "flight_data") \
+    .option("startingOffsets", "earliest") \
     .load()
 
-
-# 3. Transform
+# 3. Transform (No trim used here)
 json_df = raw_df.selectExpr("CAST(value AS STRING)") \
     .select(from_json(col("value"), schema).alias("data")) \
     .select("data.*")
-cleaned_df = json_df.withColumn(
-    # Convert String to proper Timestamp using your specific format
-    "departure_time", to_timestamp(col("departure_time"), "dd-MM-yyyy HH:mm")
+
+# 4. Route Value Aggregation
+# Grouping by route to find live pricing trends
+agg_df = json_df.groupBy("from_country", "dest_country") \
+    .agg(
+    avg("price").alias("avg_price"),
+    min("price").alias("min_price"),
+    max("price").alias("max_price"),
+    count("*").alias("flight_count")
 )
 
-
-# 4. Aggregate: Average Price per Airline
-# (We use airline_name because it's in your CSV)
-agg_df = json_df.groupBy("airline_name").agg(
-    avg("price").alias("avg_price"),
-   )
+# Sort by the average price (Cheapest routes first)
+final_sorted_df = agg_df.orderBy(col("avg_price").asc())
 
 
 def write_to_postgres(df, epoch_id):
-    print(f"--- ATTEMPTING TO WRITE BATCH {epoch_id} TO POSTGRES ---", flush=True)
+    print(f"--- UPDATING ROUTE MARKET DATA: BATCH {epoch_id} ---", flush=True)
+
+    df.show()
+    print(f"ROW COUNT: {df.count()}", flush=True)
 
     df.write \
         .format("jdbc") \
         .option("url", "jdbc:postgresql://postgres:5432/flight_data") \
-        .option("dbtable", "airline_stats") \
+        .option("dbtable", "route_value_stats") \
         .option("user", "user") \
         .option("password", "password") \
         .option("driver", "org.postgresql.Driver") \
+        .option("truncate", "true") \
         .mode("overwrite") \
         .save()
 
-    print(f"--- SUCCESSFULLY WROTE BATCH {epoch_id} ---", flush=True)
+    print(f"--- ROUTE DATA REFRESHED ---", flush=True)
 
 
-checkpoint_path = "/tmp/spark_checkpoints"
-# 5. Output
-query = agg_df.writeStream \
+# 5. Output (Complete Mode)
+query = final_sorted_df.writeStream \
     .foreachBatch(write_to_postgres) \
     .outputMode("complete") \
-    .option("checkpointLocation", "/tmp/checkpoints") \
+    .option("checkpointLocation", "/tmp/spark_checkpoints") \
     .start()
 
 query.awaitTermination()

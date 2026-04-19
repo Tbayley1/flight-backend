@@ -1,13 +1,6 @@
-# Python
-__pycache__/
-*.py[cod]
-venv/
-
-# Docker/Data (Don't version control your database files!)
-pgdata/
-checkpoints/
-.DS_Store
-
-# IDE
-.idea/
-.vscode/
+FROM python:3.9-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+CMD ["python", "producer.py"]
