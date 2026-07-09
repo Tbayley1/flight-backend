@@ -1,6 +1,6 @@
 # ✈️ Real-Time Flight Data Pipeline
 
-This project implements a real-time, event-driven Machine Learning pipeline designed to detect statistically significant market anomalies in flight pricing without relying on batch processing or database polling.
+This Data Engineering project implements a real-time, event-driven Machine Learning pipeline designed to detect statistically significant market anomalies in flight pricing without relying on batch processing or database polling.
 
 ## Executive Summary
 
@@ -23,7 +23,7 @@ graph TD
     
     subgraph "2. Processing & ML Layer (Apache Spark)"
         B --> C[Data Cleaning & Casting]
-        C --> D{ML Model: Linear Regression}
+        C --> D{ML Model: Linear Regression}dddd
         D -->|Predicts Price| E[Stateful Aggregation]
         E -->|Calculates Z-Score| F[Dual-Brain Router]
     end
