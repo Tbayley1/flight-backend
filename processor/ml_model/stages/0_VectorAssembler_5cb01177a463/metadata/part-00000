@@ -1,0 +1,1 @@
+{"class":"org.apache.spark.ml.feature.VectorAssembler","timestamp":1779858323928,"sparkVersion":"3.5.6","uid":"VectorAssembler_5cb01177a463","paramMap":{"outputCol":"features","inputCols":["stops","co2_emissions"]},"defaultParamMap":{"outputCol":"VectorAssembler_5cb01177a463__output","handleInvalid":"error"}}

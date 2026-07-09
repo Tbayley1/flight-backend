@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # 1. Message Broker
   kafka:
@@ -33,7 +31,7 @@ services:
     networks:
       - flight-network
 
-  # 3. data Ingestor (The Producer)
+  # 3. Data Ingestor (The Producer)
   flight-ingestor:
     build: ./ingestor
     container_name: flight-ingestor
@@ -47,6 +45,7 @@ services:
     networks:
       - flight-network
 
+  # 4. The Analytics & ML Engine
   flight-processor:
     build: ./processor
     container_name: spark-processor
@@ -54,20 +53,21 @@ services:
       kafka:
         condition: service_healthy
     environment:
-      # These two lines fix the "basedir must be absolute" error
       - SPARK_USER=spark
       - HOME=/tmp
+      - PYSPARK_PYTHON=python3         # <--- RESTORED: Prevents psycopg2 crashes
+      - PYSPARK_DRIVER_PYTHON=python3  # <--- RESTORED
     command: >
       spark-submit 
       --conf "spark.jars.ivy=/tmp/.ivy2"
       --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.postgresql:postgresql:42.7.2
       /app/spark_job.py
-
     volumes:
-      - ./processor/spark_job.py:/app/spark_job.py
+      - ./processor:/app               # <--- RESTORED: Allows the ML model to save/load
     networks:
       - flight-network
 
+  # 5. Database
   postgres:
     image: postgres:15
     container_name: postgres-db
@@ -79,6 +79,17 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - flight-network
+
+  # 6. The Event Gateway
+  flight-api:
+    build: ./api                       # <--- FIXED: Indentation corrected
+    container_name: fastapi-gateway
+    depends_on:
+      - postgres
+    ports:
+      - "8000:8000"
     networks:
       - flight-network
 
