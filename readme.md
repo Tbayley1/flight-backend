@@ -1,8 +1,8 @@
-# ✈️ Real-Time Flight Data Pipeline
+# Real-Time Flight Data Pipeline
 
 This Data Engineering project implements a real-time, event-driven Machine Learning pipeline designed to detect statistically significant market anomalies in flight pricing without relying on batch processing or database polling.
 
-## Executive Summary
+## Summary
 
 **1. Boot & Auto-Heal:** On startup, the Apache Spark processor checks for the pre-trained ML model. If missing, it initiates a self-healing sequence, training a Linear Regression algorithm on historical data to understand how flight features impact pricing.
 **2. Ingestion & Clean:** Spark connects to a Kafka message broker, ingesting live JSON flight data in micro-batches. It safely casts strings to decimals and fills missing values to guarantee engine stability.
@@ -12,4 +12,18 @@ This Data Engineering project implements a real-time, event-driven Machine Learn
 **6. Version Control:** A strict `.gitignore` protocol is enforced to ensure massive machine learning binaries, Spark checkpoints, and local database volumes remain securely off the repository.
 
 ---
+## How to Load and Run the Project
 
+Follow these exact steps to boot the architecture from scratch and watch the real-time anomalies flow.
+
+### 1. Prerequisites
+Ensure you have the following installed on your machine:
+* [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Running in the background)
+* Python 3.9+ 
+* Git
+
+### 2. Clone the Repository
+Open your terminal and pull the code to your local machine:
+```bash
+git clone [https://github.com/Tbayley1/flight-backend.git](https://github.com/Tbayley1/flight-backend.git)
+cd flight-backend
