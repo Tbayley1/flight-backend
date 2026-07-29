@@ -25,5 +25,5 @@ Ensure you have the following installed on your machine:
 ### 2. Clone the Repository
 Open your terminal and pull the code to your local machine:
 ```bash
-git clone [https://github.com/Tbayley1/flight-backend.git](https://github.com/Tbayley1/flight-backend.git)
+git clone https://github.com/Tbayley1/flight-backend.git
 cd flight-backend
